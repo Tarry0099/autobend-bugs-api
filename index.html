@@ -3,6 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <title>Autobend Bug Tracker</title>
+  <style>
+    .done {
+      background-color: #eee;
+      color: #666;
+      padding: 10px;
+    }
+  </style>
 </head>
 <body>
   <h1>🐞 Autobend Bug Tracker</h1>
@@ -24,7 +31,13 @@
 
       bugs.forEach((bug, index) => {
         const li = document.createElement("li");
-        li.innerHTML = `${bug.text} <strong>(von ${bug.user})</strong>`;
+        li.className = bug.erledigt ? "done" : "";
+
+        li.innerHTML = `<strong>${bug.text}</strong> <i>(von ${bug.user})</i>`;
+
+        if (bug.erledigt && bug.erledigtBy) {
+          li.innerHTML += `<br>✅ Erledigt von <b>${bug.erledigtBy}</b>`;
+        }
 
         // نمایش کامنت‌ها
         if (bug.comments && bug.comments.length > 0) {
@@ -37,37 +50,55 @@
           li.appendChild(ul);
         }
 
-        // فرم ثبت کامنت
-        const commentInput = document.createElement("input");
-        commentInput.placeholder = "Kommentar schreiben";
+        // فرم کامنت فقط اگه erledigt نباشه
+        if (!bug.erledigt) {
+          const commentInput = document.createElement("input");
+          commentInput.placeholder = "Kommentar schreiben";
 
-        const commentUser = document.createElement("input");
-        commentUser.placeholder = "Ihr Name";
+          const commentUser = document.createElement("input");
+          commentUser.placeholder = "Ihr Name";
 
-        const commentBtn = document.createElement("button");
-        commentBtn.innerText = "Kommentar senden";
-        commentBtn.onclick = async () => {
-          const commentText = commentInput.value.trim();
-          const commentUsername = commentUser.value.trim();
+          const commentBtn = document.createElement("button");
+          commentBtn.innerText = "Kommentar senden";
+          commentBtn.onclick = async () => {
+            const commentText = commentInput.value.trim();
+            const commentUsername = commentUser.value.trim();
+            if (!commentText || !commentUsername) return;
 
-          if (!commentText || !commentUsername) return;
+            bug.comments = bug.comments || [];
+            bug.comments.push({ text: commentText, user: commentUsername });
 
-          bug.comments = bug.comments || [];
-          bug.comments.push({ text: commentText, user: commentUsername });
+            await saveBugs(bugs);
+            loadBugs();
+          };
 
-          await fetch("/bugs", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(bugs)
-          });
+          li.appendChild(document.createElement("br"));
+          li.appendChild(commentInput);
+          li.appendChild(commentUser);
+          li.appendChild(commentBtn);
+        }
 
-          loadBugs(); // Reload updated list
-        };
+        // دکمه Erledigt فقط اگه هنوز erledigt نشده
+        if (!bug.erledigt) {
+          const erledigtUser = document.createElement("input");
+          erledigtUser.placeholder = "Ihr Name für Erledigt";
 
-        li.appendChild(document.createElement("br"));
-        li.appendChild(commentInput);
-        li.appendChild(commentUser);
-        li.appendChild(commentBtn);
+          const erledigtBtn = document.createElement("button");
+          erledigtBtn.innerText = "Erledigt";
+          erledigtBtn.onclick = async () => {
+            const name = erledigtUser.value.trim();
+            if (!name) return alert("Bitte Name eingeben.");
+            bug.erledigt = true;
+            bug.erledigtBy = name;
+
+            await saveBugs(bugs);
+            loadBugs();
+          };
+
+          li.appendChild(document.createElement("br"));
+          li.appendChild(erledigtUser);
+          li.appendChild(erledigtBtn);
+        }
 
         list.appendChild(li);
       });
@@ -82,18 +113,22 @@
       const res = await fetch("/bugs");
       const bugs = await res.json();
 
-      bugs.push({ text, user, comments: [] });
+      bugs.push({ text, user, comments: [], erledigt: false });
 
-      await fetch("/bugs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(bugs)
-      });
+      await saveBugs(bugs);
 
       document.getElementById("bugText").value = "";
       document.getElementById("bugUser").value = "";
 
       loadBugs();
+    }
+
+    async function saveBugs(bugs) {
+      await fetch("/bugs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bugs)
+      });
     }
 
     loadBugs();
