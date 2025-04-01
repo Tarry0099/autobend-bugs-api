@@ -28,14 +28,14 @@
       const list = document.getElementById("bugList");
       list.innerHTML = "";
 
-      bugs.forEach((bug) => {
-        if (!bug.text || !bug.user) return;  // نادیده‌گرفتن باگ‌های ناقص
+      bugs.forEach((bug, index) => {
+        // نادیده‌گرفتن باگ‌های ناقص
+        if (!bug.text || !bug.user) return;
 
         const li = document.createElement("li");
         li.className = bug.erledigt ? "done" : "";
 
         li.innerHTML = `<strong>${bug.text}</strong> <i>(von ${bug.user})</i>`;
-
         if (bug.erledigt && bug.erledigtBy) {
           li.innerHTML += `<br>✅ Erledigt von <b>${bug.erledigtBy}</b>`;
         }
@@ -78,7 +78,7 @@
         text,
         user,
         erledigt: false,
-        comments: []  // کامنت‌گذاری به طور کامل حذف شده است
+        comments: []
       });
 
       await saveBugs(bugs);
