@@ -2,19 +2,17 @@ const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
-const app = express();
 
+const app = express();
 const PORT = process.env.PORT || 3000;
+const FILE_PATH = "./bugs.json";
 
 app.use(cors());
 app.use(express.json());
 
-// این خط باعث میشه فایل‌های استاتیک (مثل index.html) نمایش داده بشن
+// نمایش فایل index.html به‌عنوان صفحه‌ی اصلی
 app.use(express.static(path.join(__dirname, ".")));
 
-const FILE_PATH = "./bugs.json";
-
-// نمایش صفحه‌ی HTML در آدرس /
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
@@ -23,26 +21,43 @@ app.get("/", (req, res) => {
 app.get("/bugs", (req, res) => {
   fs.readFile(FILE_PATH, "utf8", (err, data) => {
     if (err) return res.status(500).json({ error: "Fehler beim Lesen der Datei." });
-    res.json(JSON.parse(data || "[]"));
+    try {
+      const bugs = JSON.parse(data || "[]");
+      res.json(bugs);
+    } catch (e) {
+      res.status(500).json({ error: "Fehler beim Parsen der Datei." });
+    }
   });
 });
 
-// ذخیره‌سازی باگ جدید
+// ثبت باگ جدید
 app.post("/bugs", (req, res) => {
+  const { text, user } = req.body;
+  if (!text || !user) {
+    return res.status(400).json({ error: "Fehlerbeschreibung oder Benutzer fehlt!" });
+  }
+
   fs.readFile(FILE_PATH, "utf8", (err, data) => {
-    const bugs = JSON.parse(data || "[]");
-    bugs.push({
-      text: req.body.text,
-      user: req.body.user,
-      comments: []
-    });
+    let bugs = [];
+    if (!err && data) {
+      try {
+        bugs = JSON.parse(data);
+      } catch (e) {
+        console.error("Fehler beim Parsen:", e);
+      }
+    }
+
+    const newBug = { text, user, comments: [] };
+    bugs.push(newBug);
+
     fs.writeFile(FILE_PATH, JSON.stringify(bugs, null, 2), (err) => {
-      if (err) return res.status(500).json({ error: "Fehler beim Speichern." });
+      if (err) return res.status(500).json({ error: "Fehler beim Speichern der Datei." });
       res.json({ success: true });
     });
   });
 });
 
+// اجرای سرور
 app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
