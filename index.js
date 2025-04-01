@@ -1,46 +1,43 @@
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
-const path = require("path");
 const app = express();
-
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
 
-// این خط باعث میشه فایل‌های استاتیک (مثل index.html) نمایش داده بشن
-app.use(express.static(path.join(__dirname, ".")));
-
 const FILE_PATH = "./bugs.json";
 
-// نمایش صفحه‌ی HTML در آدرس /
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
-});
-
-// دریافت لیست باگ‌ها
+// دریافت لیست کامل باگ‌ها
 app.get("/bugs", (req, res) => {
   fs.readFile(FILE_PATH, "utf8", (err, data) => {
-    if (err) return res.status(500).json({ error: "Fehler beim Lesen der Datei." });
+    if (err) return res.status(500).json({ error: "خطا در خواندن فایل" });
     res.json(JSON.parse(data || "[]"));
   });
 });
 
-// ذخیره‌سازی باگ جدید
+// ثبت یک باگ جدید
 app.post("/bugs", (req, res) => {
+  const { text, user } = req.body;
+  if (!text || !user) return res.status(400).json({ error: "اطلاعات ناقص است" });
+
   fs.readFile(FILE_PATH, "utf8", (err, data) => {
-    const bugs = JSON.parse(data || "[]");
-    bugs.push({
-      text: req.body.text,
-      user: req.body.user,
-      comments: []
-    });
+    let bugs = [];
+    if (!err && data) bugs = JSON.parse(data);
+
+    const newBug = { text, user, comments: [] };
+    bugs.push(newBug);
+
     fs.writeFile(FILE_PATH, JSON.stringify(bugs, null, 2), (err) => {
-      if (err) return res.status(500).json({ error: "Fehler beim Speichern." });
+      if (err) return res.status(500).json({ error: "خطا در ذخیره‌سازی" });
       res.json({ success: true });
     });
   });
+});
+
+app.get("/", (req, res) => {
+  res.send("Autobend Bugs API is running 🚀");
 });
 
 app.listen(PORT, () => {
