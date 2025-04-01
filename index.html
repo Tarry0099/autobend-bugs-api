@@ -40,40 +40,8 @@
           li.innerHTML += `<br>✅ Erledigt von <b>${bug.erledigtBy}</b>`;
         }
 
-        // نمایش کامنت‌ها
-        if (bug.comments && bug.comments.length > 0) {
-          const ul = document.createElement("ul");
-          bug.comments.forEach((comment) => {
-            if (!comment.text || !comment.user) return;
-            const c = document.createElement("li");
-            c.innerText = `${comment.text} (von ${comment.user})`;
-            ul.appendChild(c);
-          });
-          li.appendChild(ul);
-        }
-
         // فقط برای باگ‌های فعال
         if (!bug.erledigt) {
-          const commentInput = document.createElement("input");
-          commentInput.placeholder = "Kommentar schreiben";
-
-          const commentUser = document.createElement("input");
-          commentUser.placeholder = "Ihr Name";
-
-          const commentBtn = document.createElement("button");
-          commentBtn.innerText = "Kommentar senden";
-          commentBtn.onclick = async () => {
-            const commentText = commentInput.value.trim();
-            const commentUsername = commentUser.value.trim();
-            if (!commentText || !commentUsername) return;
-
-            bug.comments = bug.comments || [];
-            bug.comments.push({ text: commentText, user: commentUsername });
-
-            await saveBugs(bugs);
-            loadBugs();
-          };
-
           const erledigtUser = document.createElement("input");
           erledigtUser.placeholder = "Ihr Name für Erledigt";
 
@@ -89,10 +57,6 @@
             loadBugs();
           };
 
-          li.appendChild(document.createElement("br"));
-          li.appendChild(commentInput);
-          li.appendChild(commentUser);
-          li.appendChild(commentBtn);
           li.appendChild(document.createElement("br"));
           li.appendChild(erledigtUser);
           li.appendChild(erledigtBtn);
@@ -114,7 +78,7 @@
         text,
         user,
         erledigt: false,
-        comments: []
+        comments: []  // کامنت‌گذاری به طور کامل حذف شده است
       });
 
       await saveBugs(bugs);
