@@ -7,8 +7,8 @@
 <body>
   <h1>🐞 Autobend Bug Tracker</h1>
 
-  <input id="bugText" placeholder="Funktioniert nicht im Bereich" />
-  <input id="userName" placeholder="Ihr Name" />
+  <input type="text" id="bugText" placeholder="Funktioniert nicht im Bereich" />
+  <input type="text" id="bugUser" placeholder="Ihr Name" />
   <button onclick="submitBug()">Fehler melden</button>
 
   <h2>Fehlerliste</h2>
@@ -18,33 +18,80 @@
     async function loadBugs() {
       const res = await fetch("/bugs");
       const bugs = await res.json();
+
       const list = document.getElementById("bugList");
       list.innerHTML = "";
 
       bugs.forEach((bug, index) => {
         const li = document.createElement("li");
-        li.textContent = `${bug.text} (von ${bug.user})`;
+        li.innerHTML = `${bug.text} <strong>(von ${bug.user})</strong>`;
+
+        // نمایش کامنت‌ها
+        if (bug.comments && bug.comments.length > 0) {
+          const ul = document.createElement("ul");
+          bug.comments.forEach(comment => {
+            const c = document.createElement("li");
+            c.innerText = `${comment.text} (von ${comment.user})`;
+            ul.appendChild(c);
+          });
+          li.appendChild(ul);
+        }
+
+        // فرم ثبت کامنت
+        const commentInput = document.createElement("input");
+        commentInput.placeholder = "Kommentar schreiben";
+
+        const commentUser = document.createElement("input");
+        commentUser.placeholder = "Ihr Name";
+
+        const commentBtn = document.createElement("button");
+        commentBtn.innerText = "Kommentar senden";
+        commentBtn.onclick = async () => {
+          const commentText = commentInput.value.trim();
+          const commentUsername = commentUser.value.trim();
+
+          if (!commentText || !commentUsername) return;
+
+          bug.comments = bug.comments || [];
+          bug.comments.push({ text: commentText, user: commentUsername });
+
+          await fetch("/bugs", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(bugs)
+          });
+
+          loadBugs(); // Reload updated list
+        };
+
+        li.appendChild(document.createElement("br"));
+        li.appendChild(commentInput);
+        li.appendChild(commentUser);
+        li.appendChild(commentBtn);
+
         list.appendChild(li);
       });
     }
 
     async function submitBug() {
       const text = document.getElementById("bugText").value.trim();
-      const user = document.getElementById("userName").value.trim();
+      const user = document.getElementById("bugUser").value.trim();
 
-      if (!text || !user) {
-        alert("Bitte sowohl Fehlerbeschreibung als auch Namen eingeben.");
-        return;
-      }
+      if (!text || !user) return;
+
+      const res = await fetch("/bugs");
+      const bugs = await res.json();
+
+      bugs.push({ text, user, comments: [] });
 
       await fetch("/bugs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, user })
+        body: JSON.stringify(bugs)
       });
 
       document.getElementById("bugText").value = "";
-      document.getElementById("userName").value = "";
+      document.getElementById("bugUser").value = "";
 
       loadBugs();
     }
