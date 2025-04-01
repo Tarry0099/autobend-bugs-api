@@ -7,46 +7,49 @@
 <body>
   <h1>🐞 Autobend Bug Tracker</h1>
 
-  <input type="text" id="bug" placeholder="Funktioniert nicht im Bereich" />
-  <input type="text" id="user" placeholder="Ihr Name" />
-  <button onclick="addBug()">Fehler melden</button>
+  <input id="bugText" placeholder="Funktioniert nicht im Bereich" />
+  <input id="userName" placeholder="Ihr Name" />
+  <button onclick="submitBug()">Fehler melden</button>
 
   <h2>Fehlerliste</h2>
-  <ul id="bug-list"></ul>
+  <ul id="bugList"></ul>
 
   <script>
-    async function fetchBugs() {
+    async function loadBugs() {
       const res = await fetch("/bugs");
       const bugs = await res.json();
-      const list = document.getElementById("bug-list");
+      const list = document.getElementById("bugList");
       list.innerHTML = "";
 
-      bugs.forEach(bug => {
+      bugs.forEach((bug, index) => {
         const li = document.createElement("li");
-        li.innerHTML = `<strong>${bug.user}</strong>: ${bug.text}`;
+        li.textContent = `${bug.text} (von ${bug.user})`;
         list.appendChild(li);
       });
     }
 
-    async function addBug() {
-      const text = document.getElementById("bug").value.trim();
-      const user = document.getElementById("user").value.trim();
-      if (!text || !user) return;
+    async function submitBug() {
+      const text = document.getElementById("bugText").value.trim();
+      const user = document.getElementById("userName").value.trim();
+
+      if (!text || !user) {
+        alert("Bitte sowohl Fehlerbeschreibung als auch Namen eingeben.");
+        return;
+      }
 
       await fetch("/bugs", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text, user })
       });
 
-      document.getElementById("bug").value = "";
-      document.getElementById("user").value = "";
-      fetchBugs();
+      document.getElementById("bugText").value = "";
+      document.getElementById("userName").value = "";
+
+      loadBugs();
     }
 
-    document.addEventListener("DOMContentLoaded", fetchBugs);
+    loadBugs();
   </script>
 </body>
 </html>
