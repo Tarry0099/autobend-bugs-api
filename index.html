@@ -3,137 +3,50 @@
 <head>
   <meta charset="UTF-8" />
   <title>Autobend Bug Tracker</title>
-  <style>
-    .done {
-      background-color: #eee;
-      color: #666;
-      padding: 10px;
-    }
-  </style>
 </head>
 <body>
   <h1>🐞 Autobend Bug Tracker</h1>
 
-  <input type="text" id="bugText" placeholder="Fehlerbeschreibung" />
-  <input type="text" id="bugUser" placeholder="Ihr Name" />
-  <button onclick="submitBug()">Fehler melden</button>
+  <input type="text" id="bug" placeholder="Funktioniert nicht im Bereich" />
+  <input type="text" id="user" placeholder="Ihr Name" />
+  <button onclick="addBug()">Fehler melden</button>
 
   <h2>Fehlerliste</h2>
-  <ul id="bugList"></ul>
+  <ul id="bug-list"></ul>
 
   <script>
-    async function loadBugs() {
+    async function fetchBugs() {
       const res = await fetch("/bugs");
       const bugs = await res.json();
-      const list = document.getElementById("bugList");
+      const list = document.getElementById("bug-list");
       list.innerHTML = "";
 
-      bugs.forEach((bug, index) => {
-        // نادیده‌گرفتن باگ‌های ناقص
-        if (!bug.text || !bug.user) return;
-
+      bugs.forEach(bug => {
         const li = document.createElement("li");
-        li.className = bug.erledigt ? "done" : "";
-
-        li.innerHTML = `<strong>${bug.text}</strong> <i>(von ${bug.user})</i>`;
-        if (bug.erledigt && bug.erledigtBy) {
-          li.innerHTML += `<br>✅ Erledigt von <b>${bug.erledigtBy}</b>`;
-        }
-
-        // نمایش کامنت‌ها
-        if (bug.comments && bug.comments.length > 0) {
-          const ul = document.createElement("ul");
-          bug.comments.forEach(comment => {
-            if (!comment.text || !comment.user) return;
-            const c = document.createElement("li");
-            c.innerText = `${comment.text} (von ${comment.user})`;
-            ul.appendChild(c);
-          });
-          li.appendChild(ul);
-        }
-
-        // فقط برای باگ‌های فعال
-        if (!bug.erledigt) {
-          const commentInput = document.createElement("input");
-          commentInput.placeholder = "Kommentar schreiben";
-
-          const commentUser = document.createElement("input");
-          commentUser.placeholder = "Ihr Name";
-
-          const commentBtn = document.createElement("button");
-          commentBtn.innerText = "Kommentar senden";
-          commentBtn.onclick = async () => {
-            const commentText = commentInput.value.trim();
-            const commentUsername = commentUser.value.trim();
-            if (!commentText || !commentUsername) return;
-
-            bug.comments = bug.comments || [];
-            bug.comments.push({ text: commentText, user: commentUsername });
-
-            await saveBugs(bugs);
-            loadBugs();
-          };
-
-          const erledigtUser = document.createElement("input");
-          erledigtUser.placeholder = "Ihr Name für Erledigt";
-
-          const erledigtBtn = document.createElement("button");
-          erledigtBtn.innerText = "Erledigt";
-          erledigtBtn.onclick = async () => {
-            const name = erledigtUser.value.trim();
-            if (!name) return alert("Bitte Name eingeben.");
-            bug.erledigt = true;
-            bug.erledigtBy = name;
-
-            await saveBugs(bugs);
-            loadBugs();
-          };
-
-          li.appendChild(document.createElement("br"));
-          li.appendChild(commentInput);
-          li.appendChild(commentUser);
-          li.appendChild(commentBtn);
-          li.appendChild(document.createElement("br"));
-          li.appendChild(erledigtUser);
-          li.appendChild(erledigtBtn);
-        }
-
+        li.innerHTML = `<strong>${bug.user}</strong>: ${bug.text}`;
         list.appendChild(li);
       });
     }
 
-    async function submitBug() {
-      const text = document.getElementById("bugText").value.trim();
-      const user = document.getElementById("bugUser").value.trim();
+    async function addBug() {
+      const text = document.getElementById("bug").value.trim();
+      const user = document.getElementById("user").value.trim();
       if (!text || !user) return;
 
-      const res = await fetch("/bugs");
-      const bugs = await res.json();
-
-      bugs.push({
-        text,
-        user,
-        erledigt: false,
-        comments: []
-      });
-
-      await saveBugs(bugs);
-
-      document.getElementById("bugText").value = "";
-      document.getElementById("bugUser").value = "";
-
-      loadBugs();
-    }
-
-    async function saveBugs(bugs) {
       await fetch("/bugs", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(bugs)
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ text, user })
       });
+
+      document.getElementById("bug").value = "";
+      document.getElementById("user").value = "";
+      fetchBugs();
     }
 
-    loadBugs();
+    document.addEventListener("DOMContentLoaded", fetchBugs);
   </script>
 </body>
 </html>
