@@ -1,16 +1,29 @@
 [
   {
-    "text": "کار نمی‌کنه تو بخش A",
+    "text": "Fehler im Anmeldebereich",
     "user": "Elham",
     "erledigt": false,
+    "erledigtBy": "",
     "comments": [
       {
-        "user": "ko2",
-        "text": "بررسی کردم مشکل از فاز دومه"
+        "user": "Ali",
+        "text": "Ich habe das auch getestet, der Fehler tritt auf."
       },
       {
-        "user": "ko1",
-        "text": "منم همین مشکل رو دارم"
+        "user": "Sara",
+        "text": "Dieser Fehler ist auch bei mir."
+      }
+    ]
+  },
+  {
+    "text": "Problem beim Speichern von Daten",
+    "user": "Hassan",
+    "erledigt": true,
+    "erledigtBy": "Elham",
+    "comments": [
+      {
+        "user": "Elham",
+        "text": "Das Problem wurde bereits gelöst."
       }
     ]
   }
