@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Autobend Bug Tracker</title>
+</head>
+<body>
+  <h1>🪲 Autobend Bug Tracker</h1>
+
+  <form id="bugForm">
+    <input type="text" id="bug" placeholder="مثلاً: محور Z کار نمی‌کنه" required />
+    <button type="submit">ثبت باگ</button>
+  </form>
+
+  <h2>لیست باگ‌ها</h2>
+  <ul id="bugList"></ul>
+
+  <script>
+    const apiUrl = "https://autobend-bugs-api.onrender.com/bugs";
+
+    async function loadBugs() {
+      const res = await fetch(apiUrl);
+      const bugs = await res.json();
+      const list = document.getElementById("bugList");
+      list.innerHTML = "";
+      bugs.forEach((bug, i) => {
+        const li = document.createElement("li");
+        li.textContent = `${i + 1}. ${bug}`;
+        list.appendChild(li);
+      });
+    }
+
+    document.getElementById("bugForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const input = document.getElementById("bug");
+      const bugText = input.value.trim();
+      if (!bugText) return;
+
+      const res = await fetch(apiUrl);
+      const bugs = await res.json();
+      bugs.push(bugText);
+
+      await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bugs),
+      });
+
+      input.value = "";
+      loadBugs();
+    });
+
+    loadBugs();
+  </script>
+</body>
+</html>
