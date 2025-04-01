@@ -1,48 +1,55 @@
-const express = require("express");
-const cors = require("cors");
-const fs = require("fs");
-const path = require("path");
-const app = express();
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Autobend Bug Tracker</title>
+</head>
+<body>
+  <h1>🐞 Autobend Bug Tracker</h1>
 
-const PORT = process.env.PORT || 3000;
+  <input id="bugText" placeholder="Funktioniert nicht im Bereich" />
+  <input id="userName" placeholder="Ihr Name" />
+  <button onclick="submitBug()">Fehler melden</button>
 
-app.use(cors());
-app.use(express.json());
+  <h2>Fehlerliste</h2>
+  <ul id="bugList"></ul>
 
-// این خط باعث میشه فایل‌های استاتیک (مثل index.html) نمایش داده بشن
-app.use(express.static(path.join(__dirname, ".")));
+  <script>
+    async function loadBugs() {
+      const res = await fetch("/bugs");
+      const bugs = await res.json();
+      const list = document.getElementById("bugList");
+      list.innerHTML = "";
 
-const FILE_PATH = "./bugs.json";
+      bugs.forEach((bug, index) => {
+        const li = document.createElement("li");
+        li.textContent = `${bug.text} (von ${bug.user})`;
+        list.appendChild(li);
+      });
+    }
 
-// نمایش صفحه‌ی HTML در آدرس /
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
-});
+    async function submitBug() {
+      const text = document.getElementById("bugText").value.trim();
+      const user = document.getElementById("userName").value.trim();
 
-// دریافت لیست باگ‌ها
-app.get("/bugs", (req, res) => {
-  fs.readFile(FILE_PATH, "utf8", (err, data) => {
-    if (err) return res.status(500).json({ error: "Fehler beim Lesen der Datei." });
-    res.json(JSON.parse(data || "[]"));
-  });
-});
+      if (!text || !user) {
+        alert("Bitte sowohl Fehlerbeschreibung als auch Namen eingeben.");
+        return;
+      }
 
-// ذخیره‌سازی باگ جدید
-app.post("/bugs", (req, res) => {
-  fs.readFile(FILE_PATH, "utf8", (err, data) => {
-    const bugs = JSON.parse(data || "[]");
-    bugs.push({
-      text: req.body.text,
-      user: req.body.user,
-      comments: []
-    });
-    fs.writeFile(FILE_PATH, JSON.stringify(bugs, null, 2), (err) => {
-      if (err) return res.status(500).json({ error: "Fehler beim Speichern." });
-      res.json({ success: true });
-    });
-  });
-});
+      await fetch("/bugs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, user })
+      });
 
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
-});
+      document.getElementById("bugText").value = "";
+      document.getElementById("userName").value = "";
+
+      loadBugs();
+    }
+
+    loadBugs();
+  </script>
+</body>
+</html>
