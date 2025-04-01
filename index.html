@@ -1,69 +1,57 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Autobend Bug Tracker</title>
 </head>
 <body>
   <h1>🐞 Autobend Bug Tracker</h1>
 
-  <input id="bugInput" placeholder="Funktioniert nicht im Bereich">
-  <button onclick="addBug()">Fehler melden</button>
+  <input type="text" id="bugInput" placeholder="Funktioniert nicht im Bereich" />
+  <input type="text" id="userInput" placeholder="Ihr Name" />
+  <button onclick="submitBug()">Fehler melden</button>
 
   <h2>Fehlerliste</h2>
   <ul id="bugList"></ul>
 
   <script>
+    const bugInput = document.getElementById("bugInput");
+    const userInput = document.getElementById("userInput");
+    const bugListElement = document.getElementById("bugList");
+
     async function loadBugs() {
-      const res = await fetch('/bugs');
+      const res = await fetch("/bugs");
       const bugs = await res.json();
-      const bugList = document.getElementById('bugList');
-      bugList.innerHTML = '';
 
-      bugs.forEach((bug, index) => {
-        const li = document.createElement('li');
-        li.innerHTML = `
-          <strong>${bug.text}</strong>
-          <ul>
-            ${bug.comments.map(c => `<li><em>${c.user}:</em> ${c.text}</li>`).join('')}
-          </ul>
-          <input placeholder="Ihr Name" id="name-${index}">
-          <input placeholder="Kommentar schreiben" id="comment-${index}">
-          <button onclick="addComment(${index})">Kommentieren</button>
-        `;
-        bugList.appendChild(li);
+      bugListElement.innerHTML = "";
+      bugs.forEach(bug => {
+        const li = document.createElement("li");
+        if (typeof bug === "object" && bug !== null) {
+          li.textContent = `${bug.text} (von: ${bug.user})`;
+        } else {
+          li.textContent = bug;
+        }
+        bugListElement.appendChild(li);
       });
     }
 
-    async function addBug() {
-      const input = document.getElementById('bugInput');
-      const text = input.value.trim();
+    async function submitBug() {
+      const text = bugInput.value.trim();
+      const user = userInput.value.trim() || "Unbekannt";
+
       if (!text) return;
-      await fetch('/bugs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, comments: [] })
-      });
-      input.value = '';
-      loadBugs();
-    }
 
-    async function addComment(index) {
-      const name = document.getElementById(`name-${index}`).value.trim();
-      const text = document.getElementById(`comment-${index}`).value.trim();
-      if (!name || !text) return;
-
-      const res = await fetch('/bugs');
-      const bugs = await res.json();
-      bugs[index].comments.push({ user: name, text });
-
-      await fetch('/bugs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(bugs)
+      const res = await fetch("/bugs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, user })
       });
 
-      loadBugs();
+      if (res.ok) {
+        bugInput.value = "";
+        userInput.value = "";
+        loadBugs();
+      }
     }
 
     loadBugs();
