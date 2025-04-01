@@ -1,54 +1,43 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="UTF-8">
   <title>Autobend Bug Tracker</title>
 </head>
 <body>
-  <h1>🪲 Autobend Bug Tracker</h1>
+  <h1>🐞 Autobend Bug Tracker</h1>
 
-  <form id="bugForm">
-    <input type="text" id="bug" placeholder="مثلاً: محور Z کار نمی‌کنه" required />
-    <button type="submit">ثبت باگ</button>
-  </form>
+  <input type="text" id="bugInput" placeholder="Funktioniert nicht im Bereich ...">
+  <button onclick="submitBug()">Fehler melden</button>
 
-  <h2>لیست باگ‌ها</h2>
+  <h2>Fehlerliste</h2>
   <ul id="bugList"></ul>
 
   <script>
-    const apiUrl = "https://autobend-bugs-api.onrender.com/bugs";
-
     async function loadBugs() {
-      const res = await fetch(apiUrl);
+      const res = await fetch("/bugs");
       const bugs = await res.json();
       const list = document.getElementById("bugList");
       list.innerHTML = "";
-      bugs.forEach((bug, i) => {
+      bugs.forEach(bug => {
         const li = document.createElement("li");
-        li.textContent = `${i + 1}. ${bug}`;
+        li.textContent = bug;
         list.appendChild(li);
       });
     }
 
-    document.getElementById("bugForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const input = document.getElementById("bug");
-      const bugText = input.value.trim();
-      if (!bugText) return;
-
-      const res = await fetch(apiUrl);
-      const bugs = await res.json();
-      bugs.push(bugText);
-
-      await fetch(apiUrl, {
+    async function submitBug() {
+      const input = document.getElementById("bugInput");
+      const bug = input.value;
+      if (!bug) return;
+      await fetch("/bugs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(bugs),
+        body: JSON.stringify([...document.querySelectorAll("#bugList li")].map(li => li.textContent).concat(bug))
       });
-
       input.value = "";
       loadBugs();
-    });
+    }
 
     loadBugs();
   </script>
