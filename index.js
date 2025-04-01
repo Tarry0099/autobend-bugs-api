@@ -9,6 +9,11 @@ app.use(express.json());
 
 const FILE_PATH = "./bugs.json";
 
+// روت اصلی برای تست
+app.get("/", (req, res) => {
+  res.send("Autobend Bugs API is running 🚀");
+});
+
 // خواندن لیست باگ‌ها
 app.get("/bugs", (req, res) => {
   fs.readFile(FILE_PATH, "utf8", (err, data) => {
