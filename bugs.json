@@ -1,28 +1,28 @@
 [
   {
     "text": "Fehler im Anmeldebereich",
-    "user": "Elham",
+    "user": "ko2",
     "erledigt": false,
     "erledigtBy": "",
     "comments": [
       {
-        "user": "Ali",
+        "user": "ko1",
         "text": "Ich habe das auch getestet, der Fehler tritt auf."
       },
       {
-        "user": "Sara",
+        "user": "AR1",
         "text": "Dieser Fehler ist auch bei mir."
       }
     ]
   },
   {
     "text": "Problem beim Speichern von Daten",
-    "user": "Hassan",
+    "user": "ko2",
     "erledigt": true,
-    "erledigtBy": "Elham",
+    "erledigtBy": "Ko1",
     "comments": [
       {
-        "user": "Elham",
+        "user": "Ko1",
         "text": "Das Problem wurde bereits gelöst."
       }
     ]
