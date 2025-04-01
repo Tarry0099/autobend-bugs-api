@@ -7,54 +7,46 @@
 <body>
   <h1>🐞 Autobend Bug Tracker</h1>
 
-  <input type="text" id="bugInput" placeholder="Funktioniert nicht im Bereich" />
-  <input type="text" id="userInput" placeholder="Ihr Name" />
-  <button onclick="submitBug()">Fehler melden</button>
+  <input type="text" id="bug" placeholder="Funktioniert nicht im Bereich" />
+  <input type="text" id="user" placeholder="Ihr Name" />
+  <button onclick="addBug()">Fehler melden</button>
 
   <h2>Fehlerliste</h2>
-  <ul id="bugList"></ul>
+  <ul id="bug-list"></ul>
 
   <script>
-    const bugInput = document.getElementById("bugInput");
-    const userInput = document.getElementById("userInput");
-    const bugListElement = document.getElementById("bugList");
-
-    async function loadBugs() {
+    async function fetchBugs() {
       const res = await fetch("/bugs");
       const bugs = await res.json();
+      const list = document.getElementById("bug-list");
+      list.innerHTML = "";
 
-      bugListElement.innerHTML = "";
       bugs.forEach(bug => {
         const li = document.createElement("li");
-        if (typeof bug === "object" && bug !== null) {
-          li.textContent = `${bug.text} (von: ${bug.user})`;
-        } else {
-          li.textContent = bug;
-        }
-        bugListElement.appendChild(li);
+        li.innerHTML = `<strong>${bug.user}</strong>: ${bug.text}`;
+        list.appendChild(li);
       });
     }
 
-    async function submitBug() {
-      const text = bugInput.value.trim();
-      const user = userInput.value.trim() || "Unbekannt";
+    async function addBug() {
+      const text = document.getElementById("bug").value.trim();
+      const user = document.getElementById("user").value.trim();
+      if (!text || !user) return;
 
-      if (!text) return;
-
-      const res = await fetch("/bugs", {
+      await fetch("/bugs", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({ text, user })
       });
 
-      if (res.ok) {
-        bugInput.value = "";
-        userInput.value = "";
-        loadBugs();
-      }
+      document.getElementById("bug").value = "";
+      document.getElementById("user").value = "";
+      fetchBugs();
     }
 
-    loadBugs();
+    document.addEventListener("DOMContentLoaded", fetchBugs);
   </script>
 </body>
 </html>
