@@ -1,12 +1,6 @@
 [
   {
-    "text": "test1",
-    "comments": [
-      { "user": "Elham", "comment": "این باگ هنوز رفع نشده" }
-    ]
-  },
-  {
-    "text": "test2",
-    "comments": []
+    "text": "Funktioniert nicht im Bereich",
+    "user": "Elham"
   }
 ]
