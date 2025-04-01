@@ -14,7 +14,7 @@
 <body>
   <h1>🐞 Autobend Bug Tracker</h1>
 
-  <input type="text" id="bugText" placeholder="Funktioniert nicht im Bereich" />
+  <input type="text" id="bugText" placeholder="Fehlerbeschreibung" />
   <input type="text" id="bugUser" placeholder="Ihr Name" />
   <button onclick="submitBug()">Fehler melden</button>
 
@@ -25,16 +25,17 @@
     async function loadBugs() {
       const res = await fetch("/bugs");
       const bugs = await res.json();
-
       const list = document.getElementById("bugList");
       list.innerHTML = "";
 
       bugs.forEach((bug, index) => {
+        // نادیده‌گرفتن باگ‌های ناقص
+        if (!bug.text || !bug.user) return;
+
         const li = document.createElement("li");
         li.className = bug.erledigt ? "done" : "";
 
         li.innerHTML = `<strong>${bug.text}</strong> <i>(von ${bug.user})</i>`;
-
         if (bug.erledigt && bug.erledigtBy) {
           li.innerHTML += `<br>✅ Erledigt von <b>${bug.erledigtBy}</b>`;
         }
@@ -43,6 +44,7 @@
         if (bug.comments && bug.comments.length > 0) {
           const ul = document.createElement("ul");
           bug.comments.forEach(comment => {
+            if (!comment.text || !comment.user) return;
             const c = document.createElement("li");
             c.innerText = `${comment.text} (von ${comment.user})`;
             ul.appendChild(c);
@@ -50,7 +52,7 @@
           li.appendChild(ul);
         }
 
-        // فرم کامنت فقط اگه erledigt نباشه
+        // فقط برای باگ‌های فعال
         if (!bug.erledigt) {
           const commentInput = document.createElement("input");
           commentInput.placeholder = "Kommentar schreiben";
@@ -72,14 +74,6 @@
             loadBugs();
           };
 
-          li.appendChild(document.createElement("br"));
-          li.appendChild(commentInput);
-          li.appendChild(commentUser);
-          li.appendChild(commentBtn);
-        }
-
-        // دکمه Erledigt فقط اگه هنوز erledigt نشده
-        if (!bug.erledigt) {
           const erledigtUser = document.createElement("input");
           erledigtUser.placeholder = "Ihr Name für Erledigt";
 
@@ -96,6 +90,10 @@
           };
 
           li.appendChild(document.createElement("br"));
+          li.appendChild(commentInput);
+          li.appendChild(commentUser);
+          li.appendChild(commentBtn);
+          li.appendChild(document.createElement("br"));
           li.appendChild(erledigtUser);
           li.appendChild(erledigtBtn);
         }
@@ -107,13 +105,17 @@
     async function submitBug() {
       const text = document.getElementById("bugText").value.trim();
       const user = document.getElementById("bugUser").value.trim();
-
       if (!text || !user) return;
 
       const res = await fetch("/bugs");
       const bugs = await res.json();
 
-      bugs.push({ text, user, comments: [], erledigt: false });
+      bugs.push({
+        text,
+        user,
+        erledigt: false,
+        comments: []
+      });
 
       await saveBugs(bugs);
 
