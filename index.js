@@ -1,38 +1,17 @@
-const express = require("express");
-const cors = require("cors");
-const fs = require("fs");
-const path = require("path");
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.use(cors());
-app.use(express.json());
-
-// مسیر فایل bugs
-const FILE_PATH = "./bugs.json";
-
-// نمایش فایل HTML در صفحه اصلی
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
-});
-
-// دریافت لیست باگ‌ها
-app.get("/bugs", (req, res) => {
-  fs.readFile(FILE_PATH, "utf8", (err, data) => {
-    if (err) return res.status(500).json({ error: "خطا در خواندن فایل باگ‌ها" });
-    res.json(JSON.parse(data || "[]"));
-  });
-});
-
-// ثبت باگ جدید
 app.post("/bugs", (req, res) => {
-  fs.writeFile(FILE_PATH, JSON.stringify(req.body), (err) => {
-    if (err) return res.status(500).json({ error: "خطا در ذخیره‌سازی باگ‌ها" });
-    res.json({ success: true });
-  });
-});
+  fs.readFile(FILE_PATH, "utf8", (err, data) => {
+    const bugs = JSON.parse(data || "[]");
+    const { text, user } = req.body;
 
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+    if (!text || !user) {
+      return res.status(400).json({ error: "Text oder Benutzer fehlt!" });
+    }
+
+    bugs.push({ text, user });
+
+    fs.writeFile(FILE_PATH, JSON.stringify(bugs, null, 2), err => {
+      if (err) return res.status(500).json({ error: "Fehler beim Schreiben der Datei." });
+      res.json({ success: true });
+    });
+  });
 });
