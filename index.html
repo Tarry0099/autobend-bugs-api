@@ -3,19 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <title>Autobend Bug Tracker</title>
-  <style>
-    .done {
-      background-color: #eee;
-      color: #666;
-      padding: 10px;
-    }
-  </style>
 </head>
 <body>
   <h1>🐞 Autobend Bug Tracker</h1>
 
-  <input type="text" id="bugText" placeholder="Fehlerbeschreibung" />
-  <input type="text" id="bugUser" placeholder="Ihr Name" />
+  <input id="bugText" placeholder="Funktioniert nicht im Bereich" />
+  <input id="userName" placeholder="Ihr Name" />
   <button onclick="submitBug()">Fehler melden</button>
 
   <h2>Fehlerliste</h2>
@@ -29,72 +22,31 @@
       list.innerHTML = "";
 
       bugs.forEach((bug, index) => {
-        // نادیده‌گرفتن باگ‌های ناقص
-        if (!bug.text || !bug.user) return;
-
         const li = document.createElement("li");
-        li.className = bug.erledigt ? "done" : "";
-
-        li.innerHTML = `<strong>${bug.text}</strong> <i>(von ${bug.user})</i>`;
-        if (bug.erledigt && bug.erledigtBy) {
-          li.innerHTML += `<br>✅ Erledigt von <b>${bug.erledigtBy}</b>`;
-        }
-
-        // فقط برای باگ‌های فعال
-        if (!bug.erledigt) {
-          const erledigtUser = document.createElement("input");
-          erledigtUser.placeholder = "Ihr Name für Erledigt";
-
-          const erledigtBtn = document.createElement("button");
-          erledigtBtn.innerText = "Erledigt";
-          erledigtBtn.onclick = async () => {
-            const name = erledigtUser.value.trim();
-            if (!name) return alert("Bitte Name eingeben.");
-            bug.erledigt = true;
-            bug.erledigtBy = name;
-
-            await saveBugs(bugs);
-            loadBugs();
-          };
-
-          li.appendChild(document.createElement("br"));
-          li.appendChild(erledigtUser);
-          li.appendChild(erledigtBtn);
-        }
-
+        li.textContent = `${bug.text} (von ${bug.user})`;
         list.appendChild(li);
       });
     }
 
     async function submitBug() {
       const text = document.getElementById("bugText").value.trim();
-      const user = document.getElementById("bugUser").value.trim();
-      if (!text || !user) return;
+      const user = document.getElementById("userName").value.trim();
 
-      const res = await fetch("/bugs");
-      const bugs = await res.json();
+      if (!text || !user) {
+        alert("Bitte sowohl Fehlerbeschreibung als auch Namen eingeben.");
+        return;
+      }
 
-      bugs.push({
-        text,
-        user,
-        erledigt: false,
-        comments: []
-      });
-
-      await saveBugs(bugs);
-
-      document.getElementById("bugText").value = "";
-      document.getElementById("bugUser").value = "";
-
-      loadBugs();
-    }
-
-    async function saveBugs(bugs) {
       await fetch("/bugs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(bugs)
+        body: JSON.stringify({ text, user })
       });
+
+      document.getElementById("bugText").value = "";
+      document.getElementById("userName").value = "";
+
+      loadBugs();
     }
 
     loadBugs();
