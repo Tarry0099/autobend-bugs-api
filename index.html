@@ -3,11 +3,29 @@
 <head>
   <meta charset="UTF-8" />
   <title>Autobend Bug Tracker</title>
+  <style>
+    /* استایل ساده برای باگ‌های انجام شده */
+    .bug-item.done {
+      color: grey;
+      text-decoration: line-through;
+    }
+    .bug-item.done .erledigt-controls {
+        display: none; /* مخفی کردن کنترل‌ها وقتی انجام شده */
+    }
+    .erledigt-controls input, .erledigt-controls button {
+        margin-left: 8px;
+    }
+    #bugList li {
+        margin-bottom: 10px; /* کمی فاصله بین آیتم‌ها */
+        padding: 5px;
+        border-bottom: 1px solid #eee;
+    }
+  </style>
 </head>
 <body>
   <h1>🐞 Autobend Bug Tracker</h1>
 
-  <input id="bugText" placeholder="Funktioniert nicht im Bereich" />
+  <input id="bugText" placeholder="Fehlerbeschreibung eingeben" />
   <input id="userName" placeholder="Ihr Name" />
   <button onclick="submitBug()">Fehler melden</button>
 
@@ -15,40 +33,130 @@
   <ul id="bugList"></ul>
 
   <script>
+    // تابع برای بارگذاری و نمایش باگ‌ها
     async function loadBugs() {
-      const res = await fetch("/bugs");
-      const bugs = await res.json();
-      const list = document.getElementById("bugList");
-      list.innerHTML = "";
+      try {
+        const res = await fetch("/bugs");
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        const bugs = await res.json();
+        const list = document.getElementById("bugList");
+        list.innerHTML = ""; // پاک کردن لیست قبلی
 
-      bugs.forEach((bug, index) => {
-        const li = document.createElement("li");
-        li.textContent = `${bug.text} (von ${bug.user})`;
-        list.appendChild(li);
-      });
+        bugs.forEach((bug) => {
+          if (!bug || !bug.id || !bug.text || !bug.user) return; // Skip incomplete bugs
+
+          const li = document.createElement("li");
+          li.dataset.bugId = bug.id; // ذخیره ID در دیتا اتریبیوت برای دسترسی آسان
+          li.classList.add('bug-item'); // اضافه کردن کلاس برای استایل‌دهی
+
+          // بخش اصلی نمایش باگ (شماره، متن، کاربر)
+          let bugHtml = `<strong>${bug.id}. ${bug.text}</strong> (gemeldet von ${bug.user})`;
+
+          if (bug.erledigt) {
+            // اگر باگ انجام شده
+            li.classList.add("done");
+            bugHtml += ` - <i>Erledigt von: ${bug.erledigtVon || 'Unbekannt'}</i>`; // نمایش نام انجام‌دهنده
+          } else {
+            // اگر باگ انجام نشده - اضافه کردن کنترل‌های "Erledigt"
+            bugHtml += `
+              <span class="erledigt-controls">
+                <input type="text" id="resolver-${bug.id}" placeholder="Ihr Name (Erlediger)" size="15" oninput="checkInput(${bug.id})">
+                <button id="button-${bug.id}" onclick="markAsDone(${bug.id})" disabled>Erledigt</button>
+              </span>
+            `;
+          }
+
+          li.innerHTML = bugHtml;
+          list.appendChild(li);
+        });
+      } catch (error) {
+        console.error("Fehler beim Laden der Bugs:", error);
+        const list = document.getElementById("bugList");
+        list.innerHTML = "<li>Fehler beim Laden der Bugliste. Bitte versuchen Sie es später erneut.</li>";
+      }
     }
 
+    // تابع برای فعال/غیرفعال کردن دکمه بر اساس ورودی
+    function checkInput(bugId) {
+        const input = document.getElementById(`resolver-${bugId}`);
+        const button = document.getElementById(`button-${bugId}`);
+        if (input && button) {
+            button.disabled = !input.value.trim();
+        }
+    }
+
+    // تابع برای ثبت باگ جدید
     async function submitBug() {
-      const text = document.getElementById("bugText").value.trim();
-      const user = document.getElementById("userName").value.trim();
+      const textInput = document.getElementById("bugText");
+      const userInput = document.getElementById("userName");
+      const text = textInput.value.trim();
+      const user = userInput.value.trim();
 
       if (!text || !user) {
         alert("Bitte sowohl Fehlerbeschreibung als auch Namen eingeben.");
         return;
       }
 
-      await fetch("/bugs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, user })
-      });
+      try {
+        const res = await fetch("/bugs", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, user })
+        });
 
-      document.getElementById("bugText").value = "";
-      document.getElementById("userName").value = "";
+        if (!res.ok) {
+           const errorData = await res.json().catch(() => ({ error: 'Unbekannter Serverfehler' }));
+           throw new Error(`Fehler vom Server: ${errorData.error || res.statusText}`);
+        }
 
-      loadBugs();
+        // const newBug = await res.json(); // دریافت باگ جدید از سرور
+        // به جای لود کل لیست، می‌توانیم فقط باگ جدید را اضافه کنیم
+        // اما ساده‌تر است که کل لیست را دوباره لود کنیم:
+        loadBugs();
+
+        // پاک کردن فیلدهای ورودی
+        textInput.value = "";
+        userInput.value = "";
+
+      } catch (error) {
+          console.error("Fehler beim Senden des Bugs:", error);
+          alert(`Fehler beim Melden des Bugs: ${error.message}`);
+      }
     }
 
+    // <<<<<<< تابع جدید: علامت زدن باگ به عنوان انجام شده >>>>>>>
+    async function markAsDone(bugId) {
+        const resolverInput = document.getElementById(`resolver-${bugId}`);
+        const userName = resolverInput.value.trim();
+
+        if (!userName) {
+            alert("Bitte geben Sie Ihren Namen ein, um den Bug als erledigt zu markieren.");
+            return;
+        }
+
+        try {
+            const res = await fetch(`/bugs/${bugId}/erledigt`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ erledigtVonUser: userName }) // نام فیلد باید با بک‌اند مچ باشد
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({ error: 'Unbekannter Serverfehler beim Update' }));
+                throw new Error(`Fehler vom Server beim Aktualisieren: ${errorData.error || res.statusText}`);
+            }
+
+            // const updatedBug = await res.json(); // دریافت باگ آپدیت شده
+            // به‌روزرسانی لیست برای نمایش تغییرات
+            loadBugs();
+
+        } catch (error) {
+            console.error("Fehler beim Markieren als Erledigt:", error);
+            alert(`Fehler: ${error.message}`);
+        }
+    }
+
+    // بارگذاری اولیه باگ‌ها هنگام بارگذاری صفحه
     loadBugs();
   </script>
 </body>
